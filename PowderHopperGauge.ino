@@ -407,7 +407,8 @@ void setup() {
   subMenuAlertPercent[1].enabled=disabledStatus; // Disables the second item in the subMenuAlertPercent
   
   nav.showTitle=true; // SHow titles in the menus and submenus
-  nav.timeOut = 30;  // Timeout after 10 seconds of inactivity and return to the sensor read screen
+  nav.timeOut = 60;  // Timeout after 60 seconds of inactivity and return to the sensor read screen
+  nav.idleOn(); // Start with the main screen and not the menu
   
   // Encoder timer for ESP8266
   os_timer_setfn(&myTimer, timerCallback, NULL); //set the callback funtion
