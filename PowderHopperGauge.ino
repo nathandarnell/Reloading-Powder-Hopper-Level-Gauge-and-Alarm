@@ -27,6 +27,8 @@ using namespace Menu;
 #define encBtn D6
 #define encSteps 4
 
+#define SOFT_DEBOUNCE_MS 100
+
 // No need to declare pins for 6180 sensor if you use the standard pins on ESP8266
 //SDA=4 => D2.
 //SCL=5 => D1
@@ -87,7 +89,17 @@ int readIndex = 0;              // the index of the current reading
 int total = 0;                  // the running total
 int average = 0;                // the average
 
+int drawOverlayField = 0;//change this when you click a certain prompt
+bool encBtnHigh = HIGH;  // assume switch open because of pull-up resistor
+bool buttonPressed = 0;
+unsigned long encBtnPressTime;  // when the switch last changed state
+int aPer = 0;
+int lastAPer = 1000;
+int *editField;
+
+
 // Function definitions
+void doDrawOverlayField(int min, int max);
 int checkEEPROM(int ADDR, int value, int min, int max);
 void readSensor();
 void writeToScreen();
@@ -136,7 +148,7 @@ result setGrainsSave() {
   Serial.println(grainsPerMM);
   EEPROM.put(GRAINS_PER_MM_ADDR,grainsPerMM);
   EEPROM.commit();
-  return proceed;
+  return quit;
 }
 
 result alertPercentSave() {
@@ -193,6 +205,18 @@ result showEvent(eventMask e,navNode& nav,prompt& item) {
   return proceed;
 }
 
+result editAlarmLevel(){
+  drawOverlayField = 1;
+  delay(500);
+  return proceed;
+}
+
+result editGrainsPerMM(){
+  drawOverlayField = 2;
+  delay(500);
+  return proceed;
+}
+
 // Customizing a menu look by extending the menu class
 // This makes a confirmation prompt before rebooting
 class confirmReboot:public menu {
@@ -213,7 +237,7 @@ altMENU(confirmReboot,subMenuReboot,"Reboot?",doNothing,noEvent,wrapStyle,(Menu:
 );
 
 MENU(subMenuAlertPercent,"Set Alarm Level",showEvent,noEvent,noStyle 
-  ,FIELD(alertPercent,"Alarm Level:","%",0,100,10,1,doNothing,noEvent,noStyle)
+  ,OP("Edit Alarm Level",editAlarmLevel,enterEvent)
   ,FIELD(alertPercentGrains,"Alarm in GR:","GR",0,10000,10,1,doNothing,noEvent,noStyle)
   ,OP("<Save to EEPROM",alertPercentSave,enterEvent)
   ,EXIT("<Back")
@@ -241,6 +265,7 @@ MENU(subMenuMeasureGrains,"Measure Grains/mm",showEvent,noEvent,wrapStyle
 );
 
 MENU(subMenuSetGrains,"Set Grains/mm",showEvent,noEvent,noStyle
+  ,OP("Set Grains/mm",editGrainsPerMM,enterEvent)
   ,FIELD(grainsPerMM,"Grains/mm:","GR/mm",0,100,10,1,doNothing,noEvent,noStyle)
   ,OP("<Save to EEPROM",setGrainsSave,enterEvent)
   ,EXIT("<Back")
@@ -405,6 +430,7 @@ void setup() {
   subMenuMeasureGrains[4].enabled=disabledStatus; // Disables the fourth item in the subMenuMeasureGrains
   subMenuMeasureGrains[5].enabled=disabledStatus; // Disables the fifth item in the subMenuMeasureGrains
   subMenuAlertPercent[1].enabled=disabledStatus; // Disables the second item in the subMenuAlertPercent
+  subMenuSetGrains[1].enabled=disabledStatus; // Disables the second item in the subMenuSetGrains
   
   nav.showTitle=true; // SHow titles in the menus and submenus
   nav.timeOut = 60;  // Timeout after 60 seconds of inactivity and return to the sensor read screen
@@ -431,15 +457,127 @@ void loop() {
   constexpr int menuFPS = 1000/30;
   static unsigned long lastMenuFrame =- menuFPS;
   unsigned long now = millis();
-  if (now - lastMenuFrame >= menuFPS) {
-    lastMenuFrame = millis();
-    readSensor(); // Constantly read the sensor in and out of the menu
-    nav.poll(); // Poll the input devices
-    if (nav.sleepTask) {
-      writeToScreen(); // If the menu system is not active, draw the main screen
+  //... other stuff on loop, will keep executing
+
+  switch (drawOverlayField) {
+    case 1: {
+      editField = &alertPercent;
+      doDrawOverlayField(0,100);
+      break;
+    }
+    case 2: {
+      editField = &grainsPerMM;
+      doDrawOverlayField(0,100);
+      break;
+    }
+    default:
+
+//  }
+  
+  
+//  if(drawOverlayField == 1){
+//    doDrawOverlayField();
+//  }
+//  else{
+    if (now - lastMenuFrame >= menuFPS) {
+      lastMenuFrame = millis();
+      readSensor(); // Constantly read the sensor in and out of the menu
+      nav.poll(); // Poll the input devices
+      if (nav.sleepTask) {
+        writeToScreen(); // If the menu system is not active, draw the main screen
+      }
     }
   }
 }
+
+// Draw the alertPercent value passed onto the screen overwriting the menu until done
+void doDrawOverlayField(int min, int max) {
+  char charAlertPercent[7];
+  String paddingSpaces = "";
+  String tempPercent = "";
+  int alertPercentDrawX = 10;
+
+  // Draw the value and background if the value has changed
+  if (*editField != lastAPer) { // Replaced alertPercent
+    lastAPer = *editField;//alertPercent;
+    aPer = *editField;//alertPercent;
+    // Draw the background over the menu
+    gfx.drawRect(9,9,110,142,ALERTCOLOR);
+    gfx.fillRect(10,10,108,140,BACKCOLOR);
+    
+    // Keep the percent from dropping below 0% or over 100%
+    if (aPer < min) { aPer = min; }
+    if (aPer > max) { aPer = max; }
+    
+    // convert to a string
+    String aPercent = String(aPer);
+
+    // Pad the value with leading spaces to keep it right-aligned
+    if (aPer < 10) paddingSpaces = "  ";
+    else if(aPer < 100) { paddingSpaces = " "; }
+    else { paddingSpaces = ""; }
+
+// Append the percent symbol
+    switch (drawOverlayField) {
+      case 1: {
+        aPercent += "%";
+   //     subMenuAlertPercent.dirty=true;
+        break;
+      }
+      case 2: {
+        aPercent += "gr"; 
+        int paddingSpacesIndex = paddingSpaces.length() - 1;
+        paddingSpaces.remove(paddingSpacesIndex);
+        alertPercentDrawX = 20;
+    //    subMenuSetGrains.dirty=true; 
+        break;
+      }
+ //     default:
+  
+    }
+  
+    tempPercent = paddingSpaces + aPercent;
+     
+    // add to an array
+    tempPercent.toCharArray(charAlertPercent, 5);
+
+    // Set size and color then print out the text
+    gfx.setTextSize(4);
+    gfx.setTextColor(ALERTCOLOR, BACKCOLOR); 
+    gfx.drawString(charAlertPercent, alertPercentDrawX, 50);
+  }
+  
+  // Update the encoder and add it to alertPercent
+  int encoderPos = clickEncoder.getValue();
+  if (encoderPos != 0) { *editField += encoderPos; } // Replaced alertPercent
+
+  // See if encoder button is open or closed to exit the menu
+  bool encBtnState = digitalRead(encBtn);
+  
+  // has it changed since last time?
+  if (encBtnState != encBtnHigh) {
+    
+    if (millis() - encBtnPressTime >= SOFT_DEBOUNCE_MS) { // Debounce
+       encBtnPressTime = millis ();  // when we closed the switch 
+       encBtnHigh =  encBtnState;  // remember for next time 
+       
+       if (encBtnState == LOW) { buttonPressed = 1; }  // end if switchState is LOW
+       else { buttonPressed = 0; }  // end if switchState is HIGH
+     }  // end if debounce time up
+     
+  }  // end of state change
+  if (buttonPressed){ 
+      buttonPressed = 0; // reset the button status so one press results in one action
+      gfx.setTextSize(1); // Reset the text size so the menu looks right
+      lastAPer = 1000; // Reset lastAPer so it will always draw the next time it is run
+      drawOverlayField = 0; // Set to false to get back to the menu
+      delay(1000); // Pause for a second to not be pressing the button back in the menu
+      subMenuAlertPercent.dirty=true; // Tell the submenu to redraw itself
+      subMenuSetGrains.dirty=true;
+      return;
+  }
+}
+
 
 // Check each address in EEPROM if the values fit into the range passed, read them into memory
 int checkEEPROM(int ADDR, int value, int min, int max){
