@@ -30,7 +30,7 @@ The most difficult troubleshooting seems to be with rotary encoders.  I have tri
   * <img src="/images/s-l500%20(1).jpg" width="150" /> <img src="/images/s-l500.jpg" width="150" />[Half step wth no switch pullup](https://www.ebay.com/itm/2X-Rotary-Encoder-Digital-Potentiometer-20mm-Knurled-Shaft-with-Switch-USA/382606587878?ssPageName=STRK%3AMEBIDX%3AIT&_trksid=p2057872.m2749.l2649) - This one has two issues: the switch doesn't have pullups on it like the others above and the deal breaker is that the rotary encoder outputs half the pulses of the other models.  Each "click" moves both pins to high or both pins to low.  The others move both pins to low and high on every "click."
 
 ## Rotary Encoder Testing
-I wrote a simple sketch to output the voltage of each pin the encoders are wired to.  It is from some code by Random Nerd Tutorials and adjusted for rotary encoders.  It needs an ESP32 and the encoder needs to have CLK and DT pins on one of these highlighted pins: 
+I wrote a simple sketch to output the voltage of each pin the encoders are wired to.  It is from some code by [Random Nerd Tutorials](https://randomnerdtutorials.com/esp32-adc-analog-read-arduino-ide/) and adjusted for rotary encoders.  It needs an ESP32 and the encoder needs to have CLK and DT pins on one of these highlighted pins: 
 
 <img src="/images/adc-pins-esp32-f.jpg" width="300" />
 
@@ -41,11 +41,11 @@ From bristolwatch.com , a diagram of what the rotary encoder should do for each 
 Once you upload it and run it, the serial monitor will tell you the voltage of each of the two pins.  As you rotate the encoder slowly, you can see what each one does.  Ideally, they should both start high and as you rotate one will drop to low followed by the second pin, then both will go to high one after the other in the same order as you finish the click.  Rotating slowly the opposite direction should show the leading pin in now the trailing pin going high and low.  The half step encoder above onlt does half of that each click and doesn't work reliably with the ClickEncoder library (menu selection will jump down and then up with each click).
 
 ## Building and Wiring
-Use a breadboard and jumper wires to make sure everything is wired correctly and test the sketch.  When you are ready to install it in the enclosure, use jumpers between the VL6180X sensor and the ESP8266, desolder the pins on the TFT and Rotary Encoder and directly solder the wires from the ESP8266 on each.  I used some hot glue to protect the connections and provide some strain reliefe on the connections.  Install the four 3mm nuts in the enclosure.  Lower the assembly from the top and slide the TFT and ESP8266 into their slots and then install the VL6180X.  I found some hot glue around the edges kept teh sensor nice and level when securing it down to the base with screws.  Next install the screen's 2.5mm screws and nuts and the rotary encoder to the top.  Last, install the top.  The fit is tight so I suggest testing to make sure all the connectiosn are still secure as you do each step.
+Use a breadboard and jumper wires to make sure everything is wired correctly and test the sketch.  When you are ready to install it in the enclosure, use jumpers between the VL6180X sensor and the ESP8266, desolder the pins on the TFT and Rotary Encoder and directly solder the wires from the ESP8266 on each.  I used some hot glue to protect the connections and provide some strain reliefe on the connections.  Install the four 3mm nuts in the enclosure.  Lower the assembly from the top and slide the TFT and ESP8266 into their slots and then install the VL6180X.  I found some hot glue around the edges kept teh sensor nice and level when securing it down to the base with screws.  Next install the screen's 2.5mm screws and nuts and the rotary encoder to the top.  Last, install the top.  The fit is tight so I suggest testing to make sure all the connections are still secure as you do each step.
 
-<img src="/images/20190830_080819.jpg" width="300" />
+<img src="/images/20190830_080819.jpg" width="400" />
 
-<img src="/images/20190830_080829.jpg" width="300" />
+<img src="/images/20190830_080829.jpg" width="400" />
 
 
 ## Adjusting to Your Needs
