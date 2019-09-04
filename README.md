@@ -24,9 +24,12 @@ New for this version is the inclusion of the serial interface.  If you are havin
 
 ## Rotary Encoders
 The most difficult troubleshooting seems to be with rotary encoders.  I have tried four different kinds and have found success with two of them.
-  * [The best option](https://www.amazon.com/gp/product/B07BN3DGBS/ref=ppx_yo_dt_b_asin_title_o02_s00?ie=UTF8&psc=1) - These have pullup resistors on the button and the rotary encoder and have generally worked correctly.  One of out the six I received did not work at all and one had at lease one deadspot that didn't register rotations.
-  * 
-  * 
-  * 
+  * <img src="/images/_mg_2645.jpg" width="350" />[Amazon 6 pack](https://www.amazon.com/gp/product/B07BN3DGBS/ref=ppx_yo_dt_b_asin_title_o02_s00?ie=UTF8&psc=1) - These have pullup resistors on the button and the rotary encoder and have generally worked correctly.  One of out the six I received did not work at all and one had at lease one deadspot that didn't register rotations.  Otherwise the price and consistancy has been good.
+  * [Sunfounder Rotary Encoder](https://www.sunfounder.com/rotary-encoder-module.html) - These also have pullups on all the pins as well as a LED so you can tell when it's powered on.  These are the most expensive option but the quality of the encoder and the board is very good.
+  * [Round PCB with capacitors for 5V](https://www.ebay.com/itm/Rotary-encoder-module-brick-sensor-development-audio-potentiometer-knob-SKUS/233308683253?ssPageName=STRK%3AMEBIDX%3AIT&_trksid=p2057872.m2749.l2649) - These seem like a great option since they have capacitors for debouncing but they only work correctly with 5V will not work at 3.3V.
+  * [Half step wth no switch pullup](https://www.ebay.com/itm/2X-Rotary-Encoder-Digital-Potentiometer-20mm-Knurled-Shaft-with-Switch-USA/382606587878?ssPageName=STRK%3AMEBIDX%3AIT&_trksid=p2057872.m2749.l2649) - This one has two issues: the switch doesn't have pullups on it like the others above and the deal breaker is that the rotary encoder outputs half the pulses of the other models.  Each "click" moves both pins to high or both pins to low.  The others move boths pins to low and high on every "click."
+
+## Rotary Encoder Testing
+I wrote a simple sketch to output the voltage of each pin the encoders are wired to.  Once you upload it and run it, the serial monitor will tell you the voltage of each of the two pins.  As you rotate the encoder slowly, you can see what each one does.  Ideally, they should both start high and as you rotate one will drop to low followed by the second pin, then both will go to high as you finish the click.  
 
 The STL is included and the original design file is on Onshape if you want to make a copy and adjust the design for another brand of powder hopper: [Onshape Design](https://cad.onshape.com/documents/c187c6855e5b717b6eb50d9e/w/ed8cc32766a24fa2c6d4d2bb/e/9d09fd4bb0b1d438497f7fdc)
