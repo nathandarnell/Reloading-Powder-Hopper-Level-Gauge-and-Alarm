@@ -32,8 +32,9 @@ The most difficult troubleshooting seems to be with rotary encoders.  I have tri
 ## Rotary Encoder Testing
 I wrote a simple sketch to output the voltage of each pin the encoders are wired to.  It is from some code by Random Nerd Tutorials and adjusted for rotary encoders.  It needs an ESP32 and the encoder needs to have CLK and DT pins on one of these highlighted pins: 
 
-<img src="/images/adc-pins-esp32-f.jpg" width="300" text="Suitable Pins on ESP32" />
+<img src="/images/adc-pins-esp32-f.jpg" width="300" />
 
+From bristolwatch.com , a diagram of what the rotary encoder should do for each "click" (the dashed vertical lines are each a detent that the encoder stops in).
 <img src="/images/Encoderth.jpg" width="300" />
 
 Once you upload it and run it, the serial monitor will tell you the voltage of each of the two pins.  As you rotate the encoder slowly, you can see what each one does.  Ideally, they should both start high and as you rotate one will drop to low followed by the second pin, then both will go to high one after the other in the same order as you finish the click.  Rotating slowly the opposite direction should show the leading pin in now the trailing pin going high and low.  The half step encoder above onlt does half of that each click and doesn't work reliably with the ClickEncoder library (menu selection will jump down and then up with each click).
