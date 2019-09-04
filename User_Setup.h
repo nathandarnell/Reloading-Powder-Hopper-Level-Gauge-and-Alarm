@@ -3,19 +3,19 @@
 // It is for this screen: 1.77 inch 1.8 TFT Color Display Module Breakout SPI ST7735S for Arduino UNO LCD
 // https://www.ebay.com/itm/1-77-inch-1-8-TFT-Color-Display-Module-Breakout-SPI-ST7735S-for-Arduino-UNO-LCD/222565215470
 //
-// Adafruit    SainSmart    ESP8266
-//  Names        Names       Pins
+// Adafruit    SainSmart    TFT_eSPI    ESP8266    Description
+//  Names        Names        Pins       Pins
 //
-//  GND          GND  1      GND // Obvious
-//  3V3          VCC  2      3V3 // Obvious
-//  SCL          SCK  3      D5  // Hardcoded on ESP8266
-//  MOSI         SDA  4      D7  // Hardcoded on ESP8266
-//  RESET        RES  5      RST // Make sure #define TFT_RST  -1 is uncommented below
-//  D/C          RS   6      D0  // Define what you want and change the TFT_DC value below
-//  TFT_CS       CS   7      D8  // Define what you want and change the TFT_CS value below
-//  LITE         LEDA 8      VIN // Might need to be on 3.3v but I have been running it on VIN 5v YMMV
-
-
+//  GND          GND  1                   GND      // Obvious
+//  3V3          VCC  2                   3V3      // Obvious
+//  SCL          SCK  3      TFT_SCLK     CLK      // Must be CLK when TFT_SPI_OVERLAP is defined
+//  MOSI         SDA  4      TFT_MOSI     SD1      // Must be SD1 when TFT_SPI_OVERLAP is defined
+//  RESET        RES  5      TFT_RST      RST      // Could be on GND when RST is set to -1
+//  D/C          RS   6      TFT_DC        D5      // Could be another open pin
+//  TFT_CS       CS   7      TFT_CS        D3      // Must be D3 when TFT_SPI_OVERLAP is defined
+//  LITE         LEDA 8                   VIN      // Might need to be on 3.3v but I have been running it on VIN 5v YMMV
+//
+//
 //                            USER DEFINED SETTINGS
 //   Set driver type, fonts to be loaded, pins used and SPI control method etc
 //
@@ -26,7 +26,6 @@
 //   run without the need to make any more changes for a particular hardware setup!
 //   Note that some sketches are designed for a particular TFT pixel width/height
 
-
 // ##################################################################################
 //
 // Section 1. Call up the right driver file and any options for it
@@ -34,8 +33,8 @@
 // ##################################################################################
 
 // Only define one driver, the other ones must be commented out
-//#define ILI9341_DRIVER
-#define ST7735_DRIVER      // Define additional parameters below for this display
+// #define ILI9341_DRIVER
+#define ST7735_DRIVER // Define additional parameters below for this display
 //#define ILI9163_DRIVER     // Define additional parameters below for this display
 //#define S6D02A1_DRIVER
 //#define RPI_ILI9486_DRIVER // 20MHz maximum SPI
@@ -43,14 +42,16 @@
 //#define ILI9481_DRIVER
 //#define ILI9486_DRIVER
 //#define ILI9488_DRIVER     // WARNING: Do not connect ILI9488 display SDO to MISO if other devices share the SPI bus (TFT SDO does NOT tristate when CS is high)
-//#define ST7789_DRIVER      // Define additional parameters below for this display
+//#define ST7789_DRIVER      // Full configuration option, define additional parameters below for this display
+//#define ST7789_2_DRIVER    // Minimal configuration option, define additional parameters below for this display
 //#define R61581_DRIVER
+//#define RM68140_DRIVER
 
 // Some displays support SPI reads via the MISO pin, other displays have a single
 // bi-directional SDA pin and the library will try to read this via the MOSI line.
 // To use the SDA line for reading data from the TFT uncomment the following line:
 
-// #define TFT_SDA_READ      // This option if for ESP32 ONLY, tested with ST7789 display only
+// #define TFT_SDA_READ      // This option is for ESP32 ONLY, tested with ST7789 display only
 
 // For ST7789 ONLY, define the colour order IF the blue and red are swapped on your display
 // Try ONE option at a time to find the correct colour order for your display
@@ -64,9 +65,9 @@
 
 // For ST7789, ST7735 and ILI9163 ONLY, define the pixel width and height in portrait orientation
 // #define TFT_WIDTH  80
- #define TFT_WIDTH  128
+#define TFT_WIDTH 128
 // #define TFT_WIDTH  240 // ST7789 240 x 240 and 240 x 320
- #define TFT_HEIGHT 160
+#define TFT_HEIGHT 160
 // #define TFT_HEIGHT 128
 // #define TFT_HEIGHT 240 // ST7789 240 x 240
 // #define TFT_HEIGHT 320 // ST7789 240 x 320
@@ -85,7 +86,7 @@
 // #define ST7735_GREENTAB128    // For 128 x 128 display
 // #define ST7735_GREENTAB160x80 // For 160 x 80 display (BGR, inverted, 26 offset)
 // #define ST7735_REDTAB
- #define ST7735_BLACKTAB
+#define ST7735_BLACKTAB
 // #define ST7735_REDTAB160x80   // For 160 x 80 display with 24 pixel offset
 
 // If colours are inverted (white shows as black) then uncomment one of the next
@@ -137,34 +138,19 @@
 // If 5V is not available at a pin you can use 3.3V but backlight brightness
 // will be lower.
 
-
 // ###### EDIT THE PIN NUMBERS IN THE LINES FOLLOWING TO SUIT YOUR ESP8266 SETUP ######
 
-// Adafruit    SainSmart    ESP8266
-//  Names        Names       Pins
-//
-//  GND          GND  1      GND // Obvious
-//  3V3          VCC  2      3V3 // Obvious
-//  SCL          SCK  3      D5  // Hardcoded on ESP8266
-//  MOSI         SDA  4      D7  // Hardcoded on ESP8266
-//  RESET        RES  5      RST // Make sure #define TFT_RST  -1 is uncommented below
-//  D/C          RS   6      D0  // Define what you want and change the TFT_DC value below
-//  TFT_CS       CS   7      D8  // Define what you want and change the TFT_CS value below
-//  LITE         LEDA 8      VIN // Might need to be on 3.3v but I have been running it on VIN 5v YMMV
-
-
 // For NodeMCU - use pin numbers in the form PIN_Dx where Dx is the NodeMCU pin designation
-#define TFT_CS   PIN_D8  // Chip select control pin D8
-#define TFT_DC   PIN_D0  // PIN_D3  // Data Command control pin
-//#define TFT_RST  PIN_D4  // Reset pin (could connect to NodeMCU RST, see next line)
-#define TFT_RST  -1    // Set TFT_RST to -1 if the display RESET is connected to NodeMCU RST or 3.3V
+// #define TFT_CS   PIN_D8  // Chip select control pin D8
+// #define TFT_DC   PIN_D3  // Data Command control pin
+// #define TFT_RST  PIN_D4  // Reset pin (could connect to NodeMCU RST, see next line)
+//#define TFT_RST  -1    // Set TFT_RST to -1 if the display RESET is connected to NodeMCU RST or 3.3V
 
 //#define TFT_BL PIN_D1  // LED back-light (only for ST7789 with backlight control pin)
 
 //#define TOUCH_CS PIN_D2     // Chip select pin (T_CS) of touch screen
 
 //#define TFT_WR PIN_D2       // Write strobe for modified Raspberry Pi TFT only
-
 
 // ######  FOR ESP8266 OVERLAP MODE EDIT THE PIN NUMBERS IN THE FOLLOWING LINES  ######
 
@@ -173,14 +159,13 @@
 // Use NodeMCU SD0=MISO, SD1=MOSI, CLK=SCLK to connect to TFT in overlap mode
 
 // In ESP8266 overlap mode the following must be defined
-//#define TFT_SPI_OVERLAP
+#define TFT_SPI_OVERLAP
 
 // In ESP8266 overlap mode the TFT chip select MUST connect to pin D3
-//#define TFT_CS   PIN_D3
-//#define TFT_DC   PIN_D5  // Data Command control pin
+#define TFT_CS PIN_D3
+#define TFT_DC PIN_D5 // Data Command control pin
 //#define TFT_RST  PIN_D4  // Reset pin (could connect to NodeMCU RST, see next line)
-//#define TFT_RST  -1  // Set TFT_RST to -1 if the display RESET is connected to NodeMCU RST or 3.3V
-
+#define TFT_RST -1 // Set TFT_RST to -1 if the display RESET is connected to NodeMCU RST or 3.3V
 
 // ###### EDIT THE PIN NUMBERS IN THE LINES FOLLOWING TO SUIT YOUR ESP32 SETUP   ######
 
@@ -239,7 +224,6 @@
 //#define TFT_D6   27
 //#define TFT_D7   14
 
-
 // ##################################################################################
 //
 // Section 3. Define the fonts that are to be used here
@@ -251,19 +235,18 @@
 // normally necessary. If all fonts are loaded the extra FLASH space required is
 // about 17Kbytes. To save FLASH space only enable the fonts you need!
 
-#define LOAD_GLCD   // Font 1. Original Adafruit 8 pixel font needs ~1820 bytes in FLASH
-#define LOAD_FONT2  // Font 2. Small 16 pixel high font, needs ~3534 bytes in FLASH, 96 characters
-#define LOAD_FONT4  // Font 4. Medium 26 pixel high font, needs ~5848 bytes in FLASH, 96 characters
-#define LOAD_FONT6  // Font 6. Large 48 pixel font, needs ~2666 bytes in FLASH, only characters 1234567890:-.apm
-#define LOAD_FONT7  // Font 7. 7 segment 48 pixel font, needs ~2438 bytes in FLASH, only characters 1234567890:-.
-#define LOAD_FONT8  // Font 8. Large 75 pixel font needs ~3256 bytes in FLASH, only characters 1234567890:-.
+#define LOAD_GLCD  // Font 1. Original Adafruit 8 pixel font needs ~1820 bytes in FLASH
+#define LOAD_FONT2 // Font 2. Small 16 pixel high font, needs ~3534 bytes in FLASH, 96 characters
+#define LOAD_FONT4 // Font 4. Medium 26 pixel high font, needs ~5848 bytes in FLASH, 96 characters
+#define LOAD_FONT6 // Font 6. Large 48 pixel font, needs ~2666 bytes in FLASH, only characters 1234567890:-.apm
+#define LOAD_FONT7 // Font 7. 7 segment 48 pixel font, needs ~2438 bytes in FLASH, only characters 1234567890:-.
+#define LOAD_FONT8 // Font 8. Large 75 pixel font needs ~3256 bytes in FLASH, only characters 1234567890:-.
 //#define LOAD_FONT8N // Font 8. Alternative to Font 8 above, slightly narrower, so 3 digits fit a 160 pixel TFT
-#define LOAD_GFXFF  // FreeFonts. Include access to the 48 Adafruit_GFX free fonts FF1 to FF48 and custom fonts
+#define LOAD_GFXFF // FreeFonts. Include access to the 48 Adafruit_GFX free fonts FF1 to FF48 and custom fonts
 
 // Comment out the #define below to stop the SPIFFS filing system and smooth font code being loaded
 // this will save ~20kbytes of FLASH
 #define SMOOTH_FONT
-
 
 // ##################################################################################
 //
@@ -282,15 +265,15 @@
 // #define SPI_FREQUENCY   5000000
 // #define SPI_FREQUENCY  10000000
 // #define SPI_FREQUENCY  20000000
-#define SPI_FREQUENCY  27000000 // Actually sets it to 26.67MHz = 80/3
+#define SPI_FREQUENCY 27000000 // Actually sets it to 26.67MHz = 80/3
 // #define SPI_FREQUENCY  40000000 // Maximum to use SPIFFS
 // #define SPI_FREQUENCY  80000000
 
 // Optional reduced SPI frequency for reading TFT
-#define SPI_READ_FREQUENCY  20000000
+#define SPI_READ_FREQUENCY 20000000
 
 // The XPT2046 requires a lower SPI clock rate of 2.5MHz so we define that here:
-#define SPI_TOUCH_FREQUENCY  2500000
+#define SPI_TOUCH_FREQUENCY 2500000
 
 // The ESP32 has 2 free SPI ports i.e. VSPI and HSPI, the VSPI is the default.
 // If the VSPI port is in use and pins are not accessible (e.g. TTGO T-Beam)
