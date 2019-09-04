@@ -34,12 +34,18 @@ I wrote a simple sketch to output the voltage of each pin the encoders are wired
 
 <img src="/images/adc-pins-esp32-f.jpg" width="300" />
 
-From bristolwatch.com , a diagram of what the rotary encoder should do for each "click" (the dashed vertical lines are each a detent that the encoder stops in).
+From bristolwatch.com , a diagram of what the rotary encoder should do for each "click" (the dashed vertical lines are each a detent that the encoder stops in):
+
 <img src="/images/Encoderth.jpg" width="300" />
 
 Once you upload it and run it, the serial monitor will tell you the voltage of each of the two pins.  As you rotate the encoder slowly, you can see what each one does.  Ideally, they should both start high and as you rotate one will drop to low followed by the second pin, then both will go to high one after the other in the same order as you finish the click.  Rotating slowly the opposite direction should show the leading pin in now the trailing pin going high and low.  The half step encoder above onlt does half of that each click and doesn't work reliably with the ClickEncoder library (menu selection will jump down and then up with each click).
 
 ## Building and Wiring
+Use a breadboard and jumper wires to make sure everything is wired correctly and test the sketch.  When you are ready to install it in the enclosure, use jumpers between the VL6180X sensor and the ESP8266, desolder the pins on the TFT and Rotary Encoder and directly solder the wires from the ESP8266 on each.  I used some hot glue to protect the connections and provide some strain reliefe on the connections.  Install the four 3mm nuts in the enclosure.  Lower the assembly from the top and slide the TFT and ESP8266 into their slots and then install the VL6180X.  I found some hot glue around the edges kept teh sensor nice and level when securing it down to the base with screws.  Next install the screen's 2.5mm screws and nuts and the rotary encoder to the top.  Last, install the top.  The fit is tight so I suggest testing to make sure all the connectiosn are still secure as you do each step.
+
+<img src="/images/20190830_080819.jpg" width="300" />
+
+<img src="/images/20190830_080829.jpg" width="300" />
 
 
 ## Adjusting to Your Needs
