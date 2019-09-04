@@ -3,11 +3,15 @@
 This was inspired by a video by Farrow Tech: [https://www.youtube.com/watch?v=m2Si6LQx2WA](https://www.youtube.com/watch?v=m2Si6LQx2WA).  The demonstration it is about two years old and I haven't seen anything else like it so I decided to make my own version.  
 
 ## Hardware
-Mine version uses an ESP8266 NodeMCU, a ST7735S TFT display, a VL6180X time of flight sensor, and a rotary encoder.
+My version uses an ESP8266 NodeMCU, a ST7735S TFT display, a VL6180X time of flight sensor, a rotary encoder, and some various hardware.
   * [NodeMCU ESP8266](https://www.ebay.com/itm/NEW-NodeMcu-Lua-ESP8266-CH340G-ESP-12E-Wireless-WIFI-Internet-Development-Board/233313358002?ssPageName=STRK%3AMEBIDX%3AIT&_trksid=p2057872.m2749.l2649) - The case is designed to fit this particular board.  If you use a different size/shape board or one with different pin definitions it may not work correctly
   * [1.77" TFT Screen](https://www.ebay.com/itm/1-77-inch-1-8-TFT-Color-Display-Module-Breakout-SPI-ST7735S-for-Arduino-UNO-LCD/222565215470?ssPageName=STRK%3AMEBIDX%3AIT&_trksid=p2057872.m2749.l2649) - This particular screen seems to be sold very widely and if you use the same pins to wire it and use the same settings in User_Setup.h for the TFT_eSPI library, it should work fine
   * [VL6180X Time-of-Flight Sensor](https://www.ebay.com/itm/For-Arduino-I2C-Gesture-Recognition-Range-Finder-Optical-Sensor-Module-VL6180X/302991764658?ssPageName=STRK%3AMEBIDX%3AIT&_trksid=p2057872.m2749.l2649) - The Adafruit version of this sensor also seems to work correctly but is about 2x the cost
   * [Rotary Encoder](https://www.amazon.com/gp/product/B07BN3DGBS/ref=ppx_yo_dt_b_asin_title_o02_s00?ie=UTF8&psc=1) - See below for notes on what rotary encoders work well
+  * 4 M3 nuts
+  * 2 M2.5 nuts
+  * 4 M3 x 10 screws
+  * 2 M2.5 x 10 screws
   
 ## Libraries and firware.bin
 While Farrow Tech was able to make it without libraries, mine uses:
