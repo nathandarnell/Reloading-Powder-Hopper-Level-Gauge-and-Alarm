@@ -30,8 +30,6 @@ extern "C"
 //  CS   7      D3        // Must be D3 when TFT_SPI_OVERLAP is defined
 //  LEDA 8      VIN       // Might need to be on 3.3v but I have been running it on VIN 5V YMMV
 
-// VL6180X Wiring:
-
 // Rotary Encoder Wiring:
 //
 // KY-040     ESP8266    Description
