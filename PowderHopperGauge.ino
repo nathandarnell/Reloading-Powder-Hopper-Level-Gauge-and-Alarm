@@ -46,8 +46,8 @@ extern "C"
 // VL6180X     ESP8266    Description
 //   Pins       Pins
 //
-//  VIN         GND       // Obvious
-//  GND         3V3       // Obvious
+//  VIN         3V3       // Obvious
+//  GND         GND       // Obvious
 //  SCL         D1        // Hardcoded on ESP8266 so must be D1
 //  SDA         D2        // Hardcoded on ESP8266 so must be D2
 
