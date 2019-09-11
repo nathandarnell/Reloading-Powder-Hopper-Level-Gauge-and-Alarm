@@ -574,6 +574,8 @@ void readSensor()
 }
 
 // Draw the bar graph outline on the right of the main screen
+// HEAVILY influenced by: http://henrysbench.capnfatz.com/henrys-bench/arduino-adafruit-gfx-library-user-guide/arduino-adafruit-gfx-bar-graph/
+// and also: https://www.hackster.io/LightPro/tft-graphing-bar-charts-185436
 void drawScale()
 {
   gfx.drawFastVLine(barX, barY, barHeight, SCALECOLOR);                // Vertical Scale Line Left
