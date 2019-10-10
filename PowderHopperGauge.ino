@@ -51,6 +51,14 @@ extern "C"
 //  SCL         D1        // Hardcoded on ESP8266 so must be D1
 //  SDA         D2        // Hardcoded on ESP8266 so must be D2
 
+// Alarm Buzzer Wiring:
+//
+//  Buzzer     ESP8266    Description
+//   Wire       Pins
+//
+//  Red         D8       // Could be any good input pin *EXCEPT GPIO 3 or 11*
+//  Black       GND      //  Wire a 100 ohm resistor inline betwen the buzzer and the gnd
+
 using namespace Menu;
 
 // No need to declare pins for 6180 sensor if you use the standard pins on ESP8266
@@ -94,6 +102,9 @@ VL6180X sensor;
 #define ALERTCOLOR TFT_RED
 #define TEXTCOLOR TFT_WHITE
 
+//Specify GPIO of pin that the positive lead of piezo buzzer is attached.
+int piezoPin = 15;
+
 // Bar gragh size and position
 int barWidth = 20;
 float barHeight = 144.0;
@@ -113,6 +124,8 @@ int grainsAdded = 50; // For measuring grains per mm
 int grainsAddedStart = 0;
 int grainsAddedFinish = 0;
 int alertPercentGrains = 0;
+
+// 
 
 // For saving some variables to EEPROM, only need minDist, maDist, alertPercent, and grainsPerMM
 // TODO form into struct: https://github.com/esp8266/Arduino/issues/1053
@@ -501,6 +514,7 @@ void doDrawOverlayField(int min, int max)
     delay(1000);                      // Pause for a second to not be pressing the button back in the menu
     subMenuAlertPercent.dirty = true; // Tell the submenu to redraw itself
     subMenuSetGrains.dirty = true;
+      noTone(piezoPin);
     return;
   }
 }
@@ -594,10 +608,12 @@ void drawBar(float nPer)
   if (nPer <= alertPercent)
   {
     GRAPHCOLOR = ALERTCOLOR;
+      tone(piezoPin, 60, 500);
   }
   else
   {
     GRAPHCOLOR = BARCOLOR;
+      noTone(piezoPin);
   }
 
   // Check if above 100% and set the bar to 100% to keep it in the scale
