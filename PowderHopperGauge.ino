@@ -112,6 +112,7 @@ int barX = 100;
 int barY = 8;
 
 // Measurement Declarations for Sensor
+int alarmEnabled = 1;
 int rawValue = 20; // Measurement from the sensor in mm
 int minDist = 20;  // The closest reading to the sensor in mm: 100% full
 int maxDist = 120; // The furthest reading from the sensor in mm: 0% full
@@ -133,6 +134,7 @@ int alertPercentGrains = 0;
 #define MAX_DIST_ADDR MIN_DIST_ADDR + sizeof(int)
 #define ALERT_PERCENT_ADDR MAX_DIST_ADDR + sizeof(int)
 #define GRAINS_PER_MM_ADDR ALERT_PERCENT_ADDR + sizeof(int)
+#define ALARM_BUZZER_ADDR GRAINS_PER_MM_ADDR + sizeof(int)
 
 // Strings for displaying text
 String textRawSensorValue = "Distance:";
@@ -208,6 +210,17 @@ result alertPercentSave()
   return quit;
 }
 
+result alarmEnabledSave()
+{ 
+  Serial.print("Writing to EEPROM location: ");
+  Serial.println(ALARM_BUZZER_ADDR);
+  Serial.print("Writing: ");
+  Serial.println(alarmEnabled);
+  EEPROM.put(ALARM_BUZZER_ADDR, alarmEnabled);
+  EEPROM.commit();
+  return quit;
+}
+
 result measureGrainsStart(eventMask e)
 {
   grainsAddedStart = rawValue;
@@ -277,7 +290,11 @@ MENU(subMenuMeasureGrains, "Measure Grains/mm", showEvent, noEvent, wrapStyle, F
 
 MENU(subMenuSetGrains, "Set Grains/mm", showEvent, noEvent, noStyle, OP("Set Grains/mm", editGrainsPerMM, enterEvent), FIELD(grainsPerMM, "Grains/mm:", "GR/mm", 0, 100, 10, 1, doNothing, noEvent, noStyle), OP("<Save to EEPROM", setGrainsSave, enterEvent), EXIT("<Back"));
 
-MENU(mainMenu, "POWDER LEVEL SENSOR", doNothing, noEvent, wrapStyle, SUBMENU(subMenuCalibrate), SUBMENU(subMenuAlertPercent), SUBMENU(subMenuMeasureGrains), SUBMENU(subMenuSetGrains), EXIT("Exit Menu"));
+CHOOSE(alarmEnabled, alarmBuzzerChoose, "Alarm Buzzer:", doNothing, noEvent, noStyle, VALUE("On", 1, doNothing, noEvent), VALUE("Off", 0, doNothing, noEvent));
+
+MENU(subMenuAlarmBuzzer, "Alarm Buzzer On/Off", showEvent, noEvent, noStyle, SUBMENU(alarmBuzzerChoose), OP("<Save to EEPROM", alarmEnabledSave, enterEvent),EXIT("<Back"));
+
+MENU(mainMenu, "POWDER LEVEL SENSOR", doNothing, noEvent, wrapStyle, SUBMENU(subMenuCalibrate), SUBMENU(subMenuAlertPercent), SUBMENU(subMenuMeasureGrains), SUBMENU(subMenuSetGrains), SUBMENU(subMenuAlarmBuzzer), EXIT("Exit Menu"));
 
 #define MAX_DEPTH 3
 
@@ -367,6 +384,7 @@ void setup()
   maxDist = checkEEPROM(MAX_DIST_ADDR, maxDist, 0, 250);
   alertPercent = checkEEPROM(ALERT_PERCENT_ADDR, alertPercent, 0, 100);
   grainsPerMM = checkEEPROM(GRAINS_PER_MM_ADDR, grainsPerMM, 0, 100);
+  alarmEnabled = checkEEPROM(ALARM_BUZZER_ADDR, alarmEnabled, 0, 1);
 
   subMenuCalibrate[0].enabled = disabledStatus;     // Disables the first item in the subMenuCalibrate
   subMenuCalibrate[3].enabled = disabledStatus;     // Disables the third item in the subMenuCalibrate
@@ -514,7 +532,10 @@ void doDrawOverlayField(int min, int max)
     delay(1000);                      // Pause for a second to not be pressing the button back in the menu
     subMenuAlertPercent.dirty = true; // Tell the submenu to redraw itself
     subMenuSetGrains.dirty = true;
+    if (alarmEnabled)
+    {
       noTone(piezoPin);
+    }
     return;
   }
 }
@@ -608,12 +629,18 @@ void drawBar(float nPer)
   if (nPer <= alertPercent)
   {
     GRAPHCOLOR = ALERTCOLOR;
+    if (alarmEnabled)
+    {
       tone(piezoPin, 60, 500);
+    }
   }
   else
   {
     GRAPHCOLOR = BARCOLOR;
+    if (alarmEnabled)
+    {
       noTone(piezoPin);
+    }
   }
 
   // Check if above 100% and set the bar to 100% to keep it in the scale
