@@ -58,9 +58,11 @@ using namespace Menu;
 //SCL=5 => D1
 
 // Define pins for rotary encoder
-#define encA D6
-#define encB D7
-#define encBtn D4
+// Corresponds to the GPIO For the Pin
+// Google Image Search "ESP8266 Pinout" 
+#define encA 12
+#define encB 13
+#define encBtn 2
 #define encSteps 4
 
 // Declare the clickEncoder
