@@ -8,6 +8,7 @@ My version uses an ESP8266 NodeMCU, a ST7735S TFT display, a VL6180X time of fli
   * [1.77" TFT Screen](https://www.ebay.com/itm/1-77-inch-1-8-TFT-Color-Display-Module-Breakout-SPI-ST7735S-for-Arduino-UNO-LCD/222565215470?ssPageName=STRK%3AMEBIDX%3AIT&_trksid=p2057872.m2749.l2649) - This particular screen seems to be sold very widely and if you use the same pins to wire it and use the same settings in User_Setup.h for the TFT_eSPI library, it should work fine
   * [VL6180X Time-of-Flight Sensor](https://www.ebay.com/itm/For-Arduino-I2C-Gesture-Recognition-Range-Finder-Optical-Sensor-Module-VL6180X/302991764658?ssPageName=STRK%3AMEBIDX%3AIT&_trksid=p2057872.m2749.l2649) - The Adafruit version of this sensor also seems to work correctly but is about 2x the cost
   * [Rotary Encoder](https://www.amazon.com/gp/product/B07BN3DGBS/ref=ppx_yo_dt_b_asin_title_o02_s00?ie=UTF8&psc=1) - See below for notes on what rotary encoders work well
+  * [Buzzer](https://www.amazon.com/gp/product/B07VSHHFKJ/ref=ppx_yo_dt_b_search_asin_title?ie=UTF8&psc=1) - Optional buzzer if you want an audible cue that when the powder is low
   * 6 M3 nuts
   * 2 M2.5 nuts
   * 6 M3 x 10 screws
@@ -59,7 +60,7 @@ When you are ready to install it in the enclosure, use jumpers between the VL618
 
 <img src="/images/20190830_080829.jpg" width="550" />
 
-Install the four 3mm nuts in the enclosure.  Lower the assembly from the top and slide the TFT and ESP8266 into their slots and then install the VL6180X to the bottom cover.  I found some hot glue around the edges kept the sensor nice and level when securing it down to the base with screws.  
+Install the four 3mm nuts in the enclosure.  Lower the assembly from the top and slide the TFT and ESP8266 into their slots and then install the VL6180X to the bottom cover.  **Optional** If you are using the version with the buzzer, lower the buzzer and install it in the hole (it should be a tight press fit) as you slide the assembly in.  I found some hot glue around the edges kept the sensor nice and level when securing it down to the base with screws.  
 
 <img src="/images/20190311_131357.jpg" width="550" />
 
@@ -72,4 +73,4 @@ Next install the screen's 2.5mm screws and nuts and the rotary encoder to the to
 <img src="/images/20190311_144654 (1).jpg" width="550" />
 
 ## Adjusting to Your Needs
-The STL is included for the Hornady Powder Hopper as well as the Dillon (untested by me so YMMV) and the original design file is on Onshape if you want to make a copy and adjust the design for another brand of powder hopper: [Onshape Design](https://cad.onshape.com/documents/c187c6855e5b717b6eb50d9e/w/ed8cc32766a24fa2c6d4d2bb/e/9d09fd4bb0b1d438497f7fdc)
+The STL is included for the Hornady Powder Hopper as well as the Dillon and the original design file is on Onshape if you want to make a copy and adjust the design for another brand of powder hopper: [Onshape Design](https://cad.onshape.com/documents/c187c6855e5b717b6eb50d9e/w/ed8cc32766a24fa2c6d4d2bb/e/9d09fd4bb0b1d438497f7fdc)
