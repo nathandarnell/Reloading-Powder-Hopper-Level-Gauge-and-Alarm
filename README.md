@@ -23,6 +23,24 @@ While Farrow Tech was able to make it without libraries, mine uses:
   * [ClickEncoder](https://github.com/soligen2010/encoder) - This is a fork of the rotary encoder library ArduinoMenu uses by default and has some updates over the original
   * [ardunoWebSockets](https://github.com/Links2004/arduinoWebSockets) - This library is needed by newer versions of ArduinoMenu even though it doesn't do anything for this program
   
+### Adruino IDE esp8266 Board Version
+As per [the comment from dandekalb](https://www.thingiverse.com/thing:3485453/comments#comment-6370874), you will get compile errors from the Arduino IDE if you have the board version set above 2.7.3.  This has not been tested on VS Code with PlatformIO but it is safe to assume the same.
+
+To change the board version in Arduino IDE:
+
+<img src="/images/ArduinoBoardManager.png" width="700" />
+
+To change the board version in PlatformIO (this has not been tested but should work): 
+
+In your platformi.ini replace
+
+`platform = espressif8266`
+
+with
+
+`platform = espressif8266@2.7.3`
+
+
 ### Importing Libraries
 Because some of the libraries (mostly ArduinoMenu) are under active development, I have downloaded the versions that work currently (9/4/2019) as zip files for importing into Arduino IDE or PlatformIO.  For Arduino there is a import a zip file to library menu option.  For PlatformIO with VS Code extract the zip files to the include folder within the project folder.  
 
