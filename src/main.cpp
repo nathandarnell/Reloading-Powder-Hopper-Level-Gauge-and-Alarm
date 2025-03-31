@@ -9,7 +9,7 @@ extern "C"
 #include <menuIO/chainStream.h>
 #include <menuIO/TFT_eSPIOut.h> // Edit User_Setup.h in TFT_eSPI folder for your setup
 #include <streamFlow.h>         // https://github.com/neu-rah/streamFlow
-#include <Ticker.h>
+// #include <Ticker.h>
 #include <ClickEncoder.h> // https://github.com/soligen2010/encoder
 #include <TFT_eSPI.h>     // https://github.com/Bodmer/TFT_eSPI
 #include <VL6180X.h>      // https://github.com/pololu/vl6180x-arduino
@@ -59,8 +59,6 @@ extern "C"
 //  Red         D8       // Could be any good input pin *EXCEPT GPIO 3 or 11*
 //  Black       GND      //  Wire a 100 ohm resistor inline betwen the buzzer and the gnd
 
-using namespace Menu;
-
 // No need to declare pins for 6180 sensor if you use the standard pins on ESP8266
 //SDA=4 => D2.
 //SCL=5 => D1
@@ -71,17 +69,23 @@ using namespace Menu;
 #define encA 12
 #define encB 13
 #define encBtn 2
-#define encSteps 4
+#define encSteps 4 // Some encoders use 2 steps.  Change this if you are getting 2x moves on one click
 
 // Declare the clickEncoder
 ClickEncoder clickEncoder(encA, encB, encBtn, encSteps);
 ClickEncoderStream encStream(clickEncoder, 1);
 
+//Specify GPIO of pin that the positive lead of piezo buzzer is attached.
+int piezoPin = 15;
+
+
+using namespace Menu;
+
 // Start the serial input for ArduinoMenu
 serialIn serial(Serial);
 
 // Declare the timer
-Ticker ticker;
+// Ticker ticker;
 
 // Declare the TFT
 TFT_eSPI gfx = TFT_eSPI();
@@ -102,8 +106,7 @@ VL6180X sensor;
 #define ALERTCOLOR TFT_RED
 #define TEXTCOLOR TFT_WHITE
 
-//Specify GPIO of pin that the positive lead of piezo buzzer is attached.
-int piezoPin = 15;
+
 
 // Bar gragh size and position
 int barWidth = 20;
@@ -168,7 +171,14 @@ void drawBar(float nPer);
 void writePercentText(int nPer);
 void writeSensorValues(int sensorValue);
 // void ICACHE_RAM_ATTR timerIsr()
-void IRAM_ATTR timerIsr()
+// void IRAM_ATTR timerIsr()
+// {
+//   clickEncoder.service();
+//   // int value = clickEncoder.getValue();
+//   // Serial.println(value);
+// }
+
+void IRAM_ATTR encoderISR()
 {
   clickEncoder.service();
 }
@@ -344,9 +354,9 @@ NAVROOT(nav, mainMenu, MAX_DEPTH, in, out);
 
 void setup()
 {
-  pinMode(encBtn, INPUT_PULLUP); // Was: INPUT_PULLUP but already has pullup resistor on it
+  pinMode(encBtn, INPUT_PULLUP); // Change to INPUT if the encoder button already has pullup resistor on it
 
-  clickEncoder.setAccelerationEnabled(true);
+  clickEncoder.setAccelerationEnabled(false);
   clickEncoder.setButtonOnPinZeroEnabled(true);
   clickEncoder.setButtonHeldEnabled(true);
   clickEncoder.setDoubleClickEnabled(false);
@@ -401,28 +411,14 @@ void setup()
   nav.timeOut = 60;     // Timeout after 60 seconds of inactivity and return to the sensor read screen
   nav.idleOn();         // Start with the main screen and not the menu
 
-  ticker.attach(0.001, timerIsr);
+  // ticker.attach(0.001, timerIsr);
+  attachInterrupt(digitalPinToInterrupt(encA), encoderISR, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(encB), encoderISR, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(encBtn), encoderISR, CHANGE);
 }
 
 void loop()
 {
-  nav.poll();   // Poll the input devices
-  // For debugging the rotary encoder
-  int encoderPos = clickEncoder.getValue();
-  // if (encoderPos != 0)
-  // {
-    Serial.print("Encoder Position Change: ");
-    Serial.println(encoderPos);
-  // }
-
-  ClickEncoder::Button b = clickEncoder.getButton();
-  if (b != ClickEncoder::Open)
-  {
-    Serial.print("Button Press Detected: ");
-    Serial.println(b);
-  }
-  // / For debugging the rotary encoder
-
   // Slow down the menu redraw rate
   constexpr int menuFPS = 1000 / 30;
   static unsigned long lastMenuFrame = -menuFPS;
@@ -448,8 +444,7 @@ void loop()
     {
       lastMenuFrame = millis();
       readSensor(); // Constantly read the sensor in and out of the menu
-      // Move this out of the framerate loop temporarily
-      // nav.poll();   // Poll the input devices
+      nav.poll();   // Poll the input devices
       if (nav.sleepTask)
       {
         writeToScreen(); // If the menu system is not active, draw the main screen
