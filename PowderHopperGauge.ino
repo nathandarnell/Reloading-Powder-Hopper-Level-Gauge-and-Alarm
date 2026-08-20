@@ -71,7 +71,7 @@ using namespace Menu;
 #define encA 12
 #define encB 13
 #define encBtn 2
-#define encSteps 4
+#define encSteps 2
 
 // Declare the clickEncoder
 ClickEncoder clickEncoder(encA, encB, encBtn, encSteps);
@@ -100,9 +100,10 @@ VL6180X sensor;
 #define BACKCOLOR TFT_BLACK
 #define BARCOLOR TFT_GREEN
 #define ALERTCOLOR TFT_RED
+#define WARNCOLOR TFT_ORANGE
 #define TEXTCOLOR TFT_WHITE
 
-//Specify GPIO of pin that the positive lead of piezo buzzer is attached.
+// Specify GPIO of pin that the positive lead of piezo buzzer is attached.
 int piezoPin = 15;
 
 // Bar gragh size and position
@@ -119,14 +120,15 @@ int maxDist = 120; // The furthest reading from the sensor in mm: 0% full
 int lastPercent = 0;
 int newPercent;
 int alertPercent = 20;
+int warnBufferPercent = 5;
 int grainsPerMM = 12;
 int grainsLeft = 0;
 int grainsAdded = 50; // For measuring grains per mm
 int grainsAddedStart = 0;
 int grainsAddedFinish = 0;
 int alertPercentGrains = 0;
-
-// 
+float grainsPerRound = 4.0; // measured in gr
+int roundsLeft = 0;
 
 // For saving some variables to EEPROM, only need minDist, maDist, alertPercent, and grainsPerMM
 // TODO form into struct: https://github.com/esp8266/Arduino/issues/1053
@@ -135,10 +137,12 @@ int alertPercentGrains = 0;
 #define ALERT_PERCENT_ADDR MAX_DIST_ADDR + sizeof(int)
 #define GRAINS_PER_MM_ADDR ALERT_PERCENT_ADDR + sizeof(int)
 #define ALARM_BUZZER_ADDR GRAINS_PER_MM_ADDR + sizeof(int)
+#define GRAINS_PER_ROUND_ADDR ALARM_BUZZER_ADDR + sizeof(float)
 
 // Strings for displaying text
 String textRawSensorValue = "Distance:";
 String textGrainsLeft = "GR Left:";
+String textRoundsLeft = "Rounds:";
 
 // Define the number of samples to keep track of. The higher the number, the
 // more the readings will be smoothed, but the slower the output will respond to
@@ -152,7 +156,7 @@ int readIndex = 0;         // the index of the current reading
 int total = 0;             // the running total
 int average = 0;           // the average
 
-int drawOverlayField = 0; //change this when you click a certain prompt
+int drawOverlayField = 0; // change this when you click a certain prompt
 bool buttonPressed = 0;
 int aPer = 0;
 int lastAPer = 1000;
@@ -195,6 +199,17 @@ result setGrainsSave()
   Serial.print("Writing: ");
   Serial.println(grainsPerMM);
   EEPROM.put(GRAINS_PER_MM_ADDR, grainsPerMM);
+  EEPROM.commit();
+  return quit;
+}
+
+result setRoundsSave()
+{
+  Serial.print("Writing to EEPROM location: ");
+  Serial.println(GRAINS_PER_ROUND_ADDR);
+  Serial.print("Writing: ");
+  Serial.println(grainsPerRound);
+  EEPROM.put(GRAINS_PER_ROUND_ADDR, grainsPerRound);
   EEPROM.commit();
   return quit;
 }
@@ -282,19 +297,59 @@ result editGrainsPerMM()
   return proceed;
 }
 
-MENU(subMenuAlertPercent, "Set Alarm Level", showEvent, noEvent, noStyle, OP("Edit Alarm Level", editAlarmLevel, enterEvent), FIELD(alertPercentGrains, "Alarm in GR:", "GR", 0, 10000, 10, 1, doNothing, noEvent, noStyle), OP("<Save to EEPROM", alertPercentSave, enterEvent), EXIT("<Back"));
+MENU(subMenuAlertPercent, "Set Alarm Level", showEvent, noEvent, noStyle,
+  OP("Edit Alarm Level", editAlarmLevel, enterEvent),
+  FIELD(alertPercentGrains, "Alarm in GR:", "GR", 0, 10000, 10, 1, doNothing, noEvent, noStyle),
+  OP("<Save to EEPROM", alertPercentSave, enterEvent),
+  EXIT("<Back"));
 
-MENU(subMenuCalibrate, "Calibrate Height", showEvent, noEvent, noStyle, FIELD(rawValue, "Current Dist:", "mm", 0, 255, 10, 1, NULL, enterEvent, noStyle), OP("Measure Empty Level", measureMinLevel, enterEvent), OP("Measure Full Level", measureMaxLevel, enterEvent), FIELD(maxDist, "Empty Level:", "mm", 0, 255, 10, 1, doNothing, noEvent, noStyle), FIELD(minDist, "Full Level:", "mm", 0, 255, 10, 1, doNothing, noEvent, noStyle), OP("<Save to EEPROM", saveEEPROMQuit, enterEvent), EXIT("<Back"));
+MENU(subMenuCalibrate, "Calibrate Height", showEvent, noEvent, noStyle,
+  FIELD(rawValue, "Current Dist:", "mm", 0, 255, 10, 1, NULL, enterEvent, noStyle),
+  OP("Measure Empty Level", measureMinLevel, enterEvent),
+  OP("Measure Full Level", measureMaxLevel, enterEvent),
+  FIELD(maxDist, "Empty Level:", "mm", 0, 255, 10, 1, doNothing, noEvent, noStyle),
+  FIELD(minDist, "Full Level:", "mm", 0, 255, 10, 1, doNothing, noEvent, noStyle),
+  OP("<Save to EEPROM", saveEEPROMQuit, enterEvent),
+  EXIT("<Back"));
 
-MENU(subMenuMeasureGrains, "Measure Grains/mm", showEvent, noEvent, wrapStyle, FIELD(rawValue, "Current Dist:", "mm", 0, 255, 10, 1, NULL, enterEvent, noStyle), FIELD(grainsAdded, "Grains to Add:", "GR", 0, 250, 10, 1, doNothing, noEvent, noStyle), OP("Measure Low Distance", measureGrainsStart, enterEvent), OP("Measure High Distance", measureGrainsAdded, enterEvent), FIELD(grainsAddedStart, "Starting Distance:", "mm", 0, 255, 10, 1, doNothing, noEvent, noStyle), FIELD(grainsAddedFinish, "Finish Distance:", "mm", 0, 255, 10, 1, doNothing, noEvent, noStyle), OP("<Save to EEPROM", saveEEPROMQuit, enterEvent), EXIT("<Back"));
+MENU(subMenuMeasureGrains, "Measure Grains/mm", showEvent, noEvent, wrapStyle,
+  FIELD(rawValue, "Current Dist:", "mm", 0, 255, 10, 1, NULL, enterEvent, noStyle),
+  FIELD(grainsAdded, "Grains to Add:", "GR", 0, 250, 10, 1, doNothing, noEvent, noStyle),
+  OP("Measure Low Distance", measureGrainsStart, enterEvent),
+  OP("Measure High Distance", measureGrainsAdded, enterEvent),
+  FIELD(grainsAddedStart, "Starting Distance:", "mm", 0, 255, 10, 1, doNothing, noEvent, noStyle),
+  FIELD(grainsAddedFinish, "Finish Distance:", "mm", 0, 255, 10, 1, doNothing, noEvent, noStyle),
+  OP("<Save to EEPROM", saveEEPROMQuit, enterEvent),
+  EXIT("<Back"));
 
-MENU(subMenuSetGrains, "Set Grains/mm", showEvent, noEvent, noStyle, OP("Set Grains/mm", editGrainsPerMM, enterEvent), FIELD(grainsPerMM, "Grains/mm:", "GR/mm", 0, 100, 10, 1, doNothing, noEvent, noStyle), OP("<Save to EEPROM", setGrainsSave, enterEvent), EXIT("<Back"));
+MENU(subMenuSetGrains, "Set Grains/mm", showEvent, noEvent, noStyle,
+  OP("Edit Grains/mm", editGrainsPerMM, enterEvent),
+  FIELD(grainsPerMM, "Grains/mm:", "GR/mm", 0, 100, 10, 1, doNothing, noEvent, noStyle),
+  OP("<Save to EEPROM", setGrainsSave, enterEvent),
+  EXIT("<Back"));
 
-CHOOSE(alarmEnabled, alarmBuzzerChoose, "Alarm Buzzer:", doNothing, noEvent, noStyle, VALUE("On", 1, doNothing, noEvent), VALUE("Off", 0, doNothing, noEvent));
+MENU(subMenuSetRounds, "Set Grains/round", showEvent, noEvent, noStyle,
+  FIELD(grainsPerRound, "GR/round:", " gr", 0, 75, 0.05, 1, doNothing, noEvent, noStyle),
+  OP("<Save to EEPROM", setRoundsSave, enterEvent),
+  EXIT("<Back"));
 
-MENU(subMenuAlarmBuzzer, "Alarm Buzzer On/Off", showEvent, noEvent, noStyle, SUBMENU(alarmBuzzerChoose), OP("<Save to EEPROM", alarmEnabledSave, enterEvent),EXIT("<Back"));
+CHOOSE(alarmEnabled, alarmBuzzerChoose, "Alarm Buzzer:", doNothing, noEvent, noStyle,
+  VALUE("On", 1, doNothing, noEvent),
+  VALUE("Off", 0, doNothing, noEvent));
 
-MENU(mainMenu, "POWDER LEVEL SENSOR", doNothing, noEvent, wrapStyle, SUBMENU(subMenuCalibrate), SUBMENU(subMenuAlertPercent), SUBMENU(subMenuMeasureGrains), SUBMENU(subMenuSetGrains), SUBMENU(subMenuAlarmBuzzer), EXIT("Exit Menu"));
+MENU(subMenuAlarmBuzzer, "Alarm Buzzer On/Off", showEvent, noEvent, noStyle,
+  SUBMENU(alarmBuzzerChoose),
+  OP("<Save to EEPROM", alarmEnabledSave, enterEvent),
+  EXIT("<Back"));
+
+MENU(mainMenu, "POWDER LEVEL SENSOR", doNothing, noEvent, wrapStyle,
+  SUBMENU(subMenuCalibrate),
+  SUBMENU(subMenuAlertPercent),
+  SUBMENU(subMenuMeasureGrains),
+  SUBMENU(subMenuSetGrains),
+  SUBMENU(subMenuSetRounds),
+  SUBMENU(subMenuAlarmBuzzer),
+  EXIT("Exit Menu"));
 
 #define MAX_DEPTH 3
 
@@ -316,27 +371,28 @@ MENU(mainMenu, "POWDER LEVEL SENSOR", doNothing, noEvent, wrapStyle, SUBMENU(sub
 #define Yellow RGB565(255, 255, 0)
 #define White RGB565(255, 255, 255)
 #define DarkerOrange RGB565(255, 140, 0)
+#define DarkerGray RGB565(64, 64, 64)
 
 // TFT color table
 const colorDef<uint16_t> colors[] MEMMODE = {
     //{{disabled normal,disabled selected},{enabled normal,enabled selected, enabled editing}}
-    {{(uint16_t)Black, (uint16_t)Black}, {(uint16_t)Black, (uint16_t)Red, (uint16_t)Red}},     //bgColor
-    {{(uint16_t)White, (uint16_t)White}, {(uint16_t)White, (uint16_t)White, (uint16_t)White}}, //fgColor
-    {{(uint16_t)Red, (uint16_t)Red}, {(uint16_t)Yellow, (uint16_t)Yellow, (uint16_t)Yellow}},  //valColor
-    {{(uint16_t)White, (uint16_t)White}, {(uint16_t)White, (uint16_t)White, (uint16_t)White}}, //unitColor
-    {{(uint16_t)White, (uint16_t)Gray}, {(uint16_t)Black, (uint16_t)Red, (uint16_t)White}},    //cursorColor
-    {{(uint16_t)White, (uint16_t)Yellow}, {(uint16_t)Black, (uint16_t)Red, (uint16_t)Red}},    //titleColor
+    {{(uint16_t)Black, (uint16_t)Black}, {(uint16_t)Black, (uint16_t)DarkerGray, (uint16_t)DarkerGray}},     // bgColor
+    {{(uint16_t)White, (uint16_t)White}, {(uint16_t)White, (uint16_t)White, (uint16_t)White}}, // fgColor
+    {{(uint16_t)DarkerOrange, (uint16_t)DarkerOrange}, {(uint16_t)DarkerOrange, (uint16_t)DarkerOrange, (uint16_t)Yellow}},  // valColor
+    {{(uint16_t)White, (uint16_t)White}, {(uint16_t)White, (uint16_t)White, (uint16_t)White}}, // unitColor
+    {{(uint16_t)White, (uint16_t)Gray}, {(uint16_t)Black, (uint16_t)Gray, (uint16_t)White}},    // cursorColor
+    {{(uint16_t)White, (uint16_t)Yellow}, {(uint16_t)Black, (uint16_t)DarkerOrange, (uint16_t)DarkerOrange}},    // titleColor
 };
 
 constMEM panel panels[] MEMMODE = {{0, 0, GFX_WIDTH / fontW, GFX_HEIGHT / fontH}}; // Main menu panel
-navNode *nodes[sizeof(panels) / sizeof(panel)];                                    //navNodes to store navigation status
-panelsList pList(panels, nodes, sizeof(panels) / sizeof(panel));                   //a list of panels and nodes
+navNode *nodes[sizeof(panels) / sizeof(panel)];                                    // navNodes to store navigation status
+panelsList pList(panels, nodes, sizeof(panels) / sizeof(panel));                   // a list of panels and nodes
 idx_t eSpiTops[MAX_DEPTH] = {0};
 TFT_eSPIOut eSpiOut(gfx, colors, eSpiTops, pList, fontW, fontH + 1);
 idx_t serialTops[MAX_DEPTH] = {0};
 serialOut outSerial(Serial, serialTops);
-menuOut *constMEM outputs[] MEMMODE = {&eSpiOut, &outSerial};  //list of output devices
-outputsList out(outputs, sizeof(outputs) / sizeof(menuOut *)); //outputs list
+menuOut *constMEM outputs[] MEMMODE = {&eSpiOut, &outSerial};  // list of output devices
+outputsList out(outputs, sizeof(outputs) / sizeof(menuOut *)); // outputs list
 MENU_INPUTS(in, &encStream, &serial);                          // removed: &encButton,
 NAVROOT(nav, mainMenu, MAX_DEPTH, in, out);
 
@@ -357,7 +413,7 @@ void setup()
   delay(1000);
   Serial.flush();
 
-  // STart the TFT
+  // Start the TFT
   gfx.init();
   gfx.setRotation(0);
   gfx.fillScreen((uint16_t)Black);
@@ -385,6 +441,7 @@ void setup()
   alertPercent = checkEEPROM(ALERT_PERCENT_ADDR, alertPercent, 0, 100);
   grainsPerMM = checkEEPROM(GRAINS_PER_MM_ADDR, grainsPerMM, 0, 100);
   alarmEnabled = checkEEPROM(ALARM_BUZZER_ADDR, alarmEnabled, 0, 1);
+  grainsPerRound = checkEEPROMfloat(GRAINS_PER_ROUND_ADDR, grainsPerRound, 0, 75.0);
 
   subMenuCalibrate[0].enabled = disabledStatus;     // Disables the first item in the subMenuCalibrate
   subMenuCalibrate[3].enabled = disabledStatus;     // Disables the third item in the subMenuCalibrate
@@ -421,7 +478,7 @@ void loop()
   case 2:
   {
     editField = &grainsPerMM;
-    doDrawOverlayField(0, 100);
+    doDrawOverlayField(0, 200);
     break;
   }
   default:
@@ -449,10 +506,10 @@ void doDrawOverlayField(int min, int max)
   // Draw the value and background if the value has changed
   if (*editField != lastAPer)
   {                        // Replaced alertPercent
-    lastAPer = *editField; //alertPercent;
-    aPer = *editField;     //alertPercent;
+    lastAPer = *editField; // alertPercent;
+    aPer = *editField;     // alertPercent;
     // Draw the background over the menu
-    gfx.drawRect(9, 9, 110, 142, ALERTCOLOR);
+    gfx.drawRect(9, 9, 110, 142, WARNCOLOR);
     gfx.fillRect(10, 10, 108, 140, BACKCOLOR);
 
     // Keep the percent from dropping below 0% or over 100%
@@ -505,7 +562,7 @@ void doDrawOverlayField(int min, int max)
 
     // Set size and color then print out the text
     gfx.setTextSize(4);
-    gfx.setTextColor(ALERTCOLOR, BACKCOLOR);
+    gfx.setTextColor(WARNCOLOR, BACKCOLOR);
     gfx.drawString(charAlertPercent, alertPercentDrawX, 50);
   }
 
@@ -558,6 +615,25 @@ int checkEEPROM(int ADDR, int value, int min, int max)
   }
 }
 
+// Check each address in EEPROM if the values fit into the range passed, read them into memory
+float checkEEPROMfloat(int ADDR, float value, float min, float max)
+{
+  float tempEEPROMfloat;
+  EEPROM.get(ADDR, tempEEPROMfloat);
+  Serial.print("ADDR: ");
+  Serial.println(ADDR);
+  Serial.print("value: ");
+  Serial.println(tempEEPROMfloat);
+  if (tempEEPROMfloat >= min && tempEEPROMfloat <= max)
+  {
+    return tempEEPROMfloat;
+  }
+  else
+  {
+    return value;
+  }
+}
+
 // Determine if the bar graph and displayed values need updating
 void writeToScreen()
 {
@@ -599,7 +675,7 @@ void readSensor()
   // Calculate the percent based on the reading and the range of minDist and maxDist
   newPercent = ((maxDist - rawValue) * 100) / (maxDist - minDist);
 
-  // Calculate the alet percent in grains value for the menu screen
+  // Calculate the alert percent in grains value for the menu screen
   alertPercentGrains = (grainsPerMM * (maxDist - minDist) * alertPercent) / 100;
 
   // Debugging if the sensor isn't working correctly
@@ -632,6 +708,14 @@ void drawBar(float nPer)
     if (alarmEnabled)
     {
       tone(piezoPin, 60, 500);
+    }
+  }
+  else if (nPer <= (alertPercent + warnBufferPercent))
+  {
+    GRAPHCOLOR = WARNCOLOR;
+    if (alarmEnabled)
+    {
+      noTone(piezoPin);
     }
   }
   else
@@ -749,12 +833,16 @@ void writePercentText(int nPer)
   { // Write the percent in the alert color or the normal text color
     gfx.setTextColor(ALERTCOLOR, BACKCOLOR);
   }
+  else if (nPer <= (alertPercent + warnBufferPercent))
+  {
+    gfx.setTextColor(WARNCOLOR, BACKCOLOR);
+  }
   else
   {
     gfx.setTextColor(TEXTCOLOR, BACKCOLOR);
   }
   // print out and erase
-  gfx.drawString(displayPercent, 2, 50);
+  gfx.drawString(displayPercent, 2, 40);
 }
 
 // Display the raw value from the distance sensor with a small label and the grains remaining
@@ -763,6 +851,7 @@ void writeSensorValues(int sensorValue)
   // Char arrays for displaying values
   char displayValue[7];
   char displayGrainsLeft[6];
+  char displayRoundsLeft[6];
 
   // convert sensor value to a string
   String sValue = String(sensorValue);
@@ -799,5 +888,31 @@ void writeSensorValues(int sensorValue)
   gLeft.toCharArray(displayGrainsLeft, 6);
   // Write the values to the screen
   gfx.drawString(textGrainsLeft, 2, 120);
-  gfx.drawString(displayGrainsLeft, 51, 120);
+  gfx.drawString(displayGrainsLeft, 58, 120);
+
+  // Calculate rounds left
+  roundsLeft = grainsLeft / grainsPerRound;
+  if (roundsLeft < 0)
+  {
+    roundsLeft = 0;
+  }
+  /* // Display the readings for debugging the calculation
+  Serial.print("grainsLeft: ");
+  Serial.println(grainsLeft);
+  Serial.print("roundsLeft: ");
+  Serial.println(roundsLeft);
+  Serial.print("grainsPerRound: ");
+  Serial.println(grainsPerRound);
+  */
+
+  // convert to a string
+  String rLeft = String(roundsLeft);
+  // Append a space to erase the floating 0 when the value drops by a digit
+  rLeft += " ";
+  // add to an array
+  rLeft.toCharArray(displayRoundsLeft, 6);
+  // Write the values to the screen
+  gfx.drawString(textRoundsLeft, 2, 100);
+  gfx.drawString(displayRoundsLeft, 58, 100);
+
 }
